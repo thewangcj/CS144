@@ -1,3 +1,8 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/sponge"
+    "cmake.sourceDirectory": "/home/ubuntu/cs144/minnow",
+    "files.associations": {
+        "algorithm": "cpp",
+        "span": "cpp",
+        "*.tcc": "cpp"
+    }
 }
