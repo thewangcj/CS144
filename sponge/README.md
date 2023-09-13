@@ -20,9 +20,9 @@ You can use the `-j` switch to build in parallel, e.g.,
 
 To test (after building; make sure you've got the [build prereqs](https://web.stanford.edu/class/cs144/vm_howto) installed!)
 
-    $ make check_labN *(replacing N with a checkpoint number)*
+    $ make check
 
-The first time you run `make check_lab...`, it will run `sudo` to configure two
+The first time you run `make check`, it will run `sudo` to configure two
 [TUN](https://www.kernel.org/doc/Documentation/networking/tuntap.txt) devices for use during
 testing.
 
@@ -63,6 +63,14 @@ Of course, you can combine all of the above, e.g.,
 To generate documentation (you'll need `doxygen`; output will be in `build/doc/`):
 
     $ make doc
+
+To lint (you'll need `clang-tidy`):
+
+    $ make -j$(nproc) tidy
+
+To run cppcheck (you'll need `cppcheck`):
+
+    $ make cppcheck
 
 To format (you'll need `clang-format`):
 
