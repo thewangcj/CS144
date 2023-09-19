@@ -1,4 +1,5 @@
 #include "byte_stream.hh"
+#include <iostream>
 
 // Dummy implementation of a flow-controlled in-memory byte stream.
 
@@ -24,6 +25,15 @@ size_t ByteStream::write(const string &data) {
         _buffer.push_back(data[i]);
     }
     return len;
+}
+
+size_t ByteStream::write_char(const char data) {
+    if (_capacity == _buffer.size()) {
+        return 0;
+    }
+    _write_count ++;
+    _buffer.push_back(data);
+    return 1;
 }
 
 //! \param[in] len bytes will be copied from the output side of the buffer
