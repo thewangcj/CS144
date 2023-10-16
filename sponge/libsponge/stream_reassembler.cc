@@ -153,7 +153,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
     // b. buffer 中有数据且开头输出过了
     if (_buffer.size() && _next_assemble < _first_unassemble) {
         // 去掉输出过的部分
-        size_t offset = _first_unassemble - _next_assemble;
+        size_t offset = min(_first_unassemble - _next_assemble, _buffer.size());
         for (size_t i = 0; i < offset; i++) {
             _buffer.pop_front();
             _wflags.pop_front();
