@@ -6,3 +6,7 @@
     - syn: seq = 2387613953 ack = 0
     - syn_ack: seq = 3344080264 ack = 2387613954
     - ack: seq = 2387613954 ack = 3344080265
+3. 几种 seq number 之间的关系
+    seq_no: 原始 tcp 包中的 seq num
+    absolute seq_no: 从 0 开始的 seq num 且 syn/fin 都算一位
+    stream_index: 从 0 开始的 seq_num 但是不算 syn/fin

@@ -24,6 +24,7 @@ class TCPSender {
     std::queue<TCPSegment> _segments_out{};
 
     //! retransmission timer for the connection
+    // RTO: 重传时间初始值
     unsigned int _initial_retransmission_timeout;
 
     //! outgoing stream of bytes that have not yet been sent
@@ -31,6 +32,21 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+    // 是否发送过 syn
+    bool _syn{false};
+    // 是否发送过 fin
+    bool _fin{false};
+    // 上一次收到 ackno 和 window_size
+    uint16_t receive_win_size{0};
+    uint64_t receive_ackno{0};
+    // flight_queue 中 segment 的总大小
+	  uint64_t flight_size{0};
+    // 定时器计时
+    size_t passed_time{0};
+    // 定时器是否在运行
+    bool timer_running{false};
+    // segment 的待确认队列
+    std::queue<TCPSegment> flight_queue{};
 
   public:
     //! Initialize a TCPSender
@@ -87,6 +103,7 @@ class TCPSender {
     //! \brief relative seqno for the next byte to be sent
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
     //!@}
+    void send_segment(TCPSegment segment);
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_SENDER_HH
