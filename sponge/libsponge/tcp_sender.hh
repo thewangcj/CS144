@@ -26,6 +26,10 @@ class TCPSender {
     //! retransmission timer for the connection
     // RTO: 重传时间初始值
     unsigned int _initial_retransmission_timeout;
+    // 当前超时重传时间
+    unsigned int _retransmission_timeout;
+    // 连续重传计数器
+    unsigned int _consecutive_retransmissions_count{0};
 
     //! outgoing stream of bytes that have not yet been sent
     ByteStream _stream;
@@ -36,10 +40,10 @@ class TCPSender {
     bool _syn{false};
     // 是否发送过 fin
     bool _fin{false};
-    // 上一次收到 ackno 和 window_size
+    // 上一次收到的 absolute ackno 和 window_size
     uint16_t receive_win_size{0};
     uint64_t receive_ackno{0};
-    // flight_queue 中 segment 的总大小
+    // flight_queue 中 segment 的总大小，即发送了但是还没有确认
 	  uint64_t flight_size{0};
     // 定时器计时
     size_t passed_time{0};
