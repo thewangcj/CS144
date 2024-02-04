@@ -43,14 +43,26 @@ void TCPSender::fill_window() {
     // receiver window size 为0时当做1
     uint16_t receive_wsize = receive_win_size == 0 ? 1 : receive_win_size;
 
-    // 发送segment直到对方 win_size 满或者没有数据了
+    if (_stream.eof() && receive_ackno + receive_wsize > _next_seqno) {
+        segment.header().fin = true;
+        _fin = true;
+        send_segment(segment);
+        return;
+    }
+
+    // 发送 segment 直到对方 win_size 满或者没有数据了
     // 这里之所以要满足 receive_wsize > flight_size 是因为 receiver 的 window 是用 ackno + receive_win_size 框出来的，
-    // flight_queue + 新发送的 seg 要在这个范围之内
+    // flight_size 是还没有确认的部分，实际上已经在接收窗口里了，flight_queue + 新发送的 seg 要在这个范围之内
     while (receive_wsize > flight_size && !_stream.buffer_empty()) {
         uint16_t seg_len = min(TCPConfig::MAX_PAYLOAD_SIZE, receive_wsize - flight_size);
         // 装入 payload
         string payload = _stream.read(seg_len);
         segment.payload() = Buffer(move(payload));
+        if (!_fin && _stream.eof() && payload.size() + flight_size < receive_wsize) {
+            segment.header().fin = true;
+            _fin = true;
+        }
+
         send_segment(segment);
     }
 }
@@ -68,7 +80,7 @@ void TCPSender::send_segment(TCPSegment segment) {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 //! \returns `false` if the ackno appears invalid (acknowledges something the TCPSender hasn't sent yet)
-// 这里 ackno 是窗口的左边界，window_size + ackno 是窗口的又边界，可以发送的 seg 就在这段 window
+// 这里 ackno 是窗口的左边界，window_size + ackno 是窗口的右边界，可以发送的 seg 就在这段 window 之内
 bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) {
     // 先转换为相对 ack
     uint64_t abs_ackno = unwrap(ackno, _isn, _next_seqno);
@@ -76,7 +88,8 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     if (abs_ackno > _next_seqno)
         return false;
     // 过滤重复 ack
-    if (receive_ackno < abs_ackno) {
+    // 这里没有考虑 ack 重复且 winsize 为 0 的情况，这种不能 double RTO
+    if (receive_ackno <= abs_ackno) {
         receive_ackno = abs_ackno;
         receive_win_size = window_size;
     }
@@ -101,9 +114,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         return;
 
     passed_time += ms_since_last_tick;
+}
 
- }
+unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions_count; }
 
- unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions_count; }
-
- void TCPSender::send_empty_segment() {}
+void TCPSender::send_empty_segment() {}
