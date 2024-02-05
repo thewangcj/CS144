@@ -76,6 +76,11 @@ void TCPSender::send_segment(TCPSegment segment) {
     flight_queue.push(segment);
     flight_size += segment.length_in_sequence_space();
     _next_seqno += segment.length_in_sequence_space();
+    if (!timer_running) {
+        // 发送包后开启重传计时
+        timer_running = true;
+        _consecutive_retransmissions_count = 0;
+    }
     // std::cout << "seqno: " << segment.header().seqno;
     // std::cout << "payload " << segment.payload().str();
     // std::cout << " seg_length " << segment.length_in_sequence_space() << "\n";
@@ -104,10 +109,19 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         if (unwrap(segment.header().seqno, _isn, _next_seqno) + segment.length_in_sequence_space() <= receive_ackno) {
             flight_size -= segment.length_in_sequence_space();
             flight_queue.pop();
+            // 收到一个完整的包，清空超时时间
+            _retransmission_timeout = _initial_retransmission_timeout;
+            passed_time = 0;
         } else {
             break;
         }
     }
+    // 收到了 ACK，重置 RTO
+    _consecutive_retransmissions_count = 0;
+
+    // 没有待确认的包，停止超时机制
+    if (flight_queue.empty())
+        timer_running = false;
     return true;
 }
 
@@ -118,10 +132,22 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         return;
 
     passed_time += ms_since_last_tick;
+
+    if (passed_time >= _retransmission_timeout && !flight_queue.empty()) {
+        TCPSegment segment = flight_queue.front();
+        _segments_out.push(segment);
+        passed_time = 0;
+        // syn 包发出去没有收到过 ack,但是也要考虑 RTO*2
+        if (receive_win_size > 0 || segment.header().syn) {
+            _consecutive_retransmissions_count++;
+            _retransmission_timeout *= 2;
+        }
+    }
 }
 
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions_count; }
 
+// 用于发送 syn ack 这样的空包
 void TCPSender::send_empty_segment() {
     TCPSegment segment;
     segment.header().seqno = next_seqno();
