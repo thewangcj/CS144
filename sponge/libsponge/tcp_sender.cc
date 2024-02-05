@@ -3,6 +3,7 @@
 #include "tcp_config.hh"
 #include "tcp_segment.hh"
 
+#include <iostream>
 #include <random>
 
 // Dummy implementation of a TCP sender
@@ -75,6 +76,9 @@ void TCPSender::send_segment(TCPSegment segment) {
     flight_queue.push(segment);
     flight_size += segment.length_in_sequence_space();
     _next_seqno += segment.length_in_sequence_space();
+    // std::cout << "seqno: " << segment.header().seqno;
+    // std::cout << "payload " << segment.payload().str();
+    // std::cout << " seg_length " << segment.length_in_sequence_space() << "\n";
 }
 
 //! \param ackno The remote receiver's ackno (acknowledgment number)
@@ -118,4 +122,8 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
 
 unsigned int TCPSender::consecutive_retransmissions() const { return _consecutive_retransmissions_count; }
 
-void TCPSender::send_empty_segment() {}
+void TCPSender::send_empty_segment() {
+    TCPSegment segment;
+    segment.header().seqno = next_seqno();
+    _segments_out.push(segment);
+}
