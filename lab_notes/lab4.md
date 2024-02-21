@@ -1,0 +1,1 @@
+1. sender 和 connection 中都有 segment_out，根据 lab 文档的说法
