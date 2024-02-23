@@ -53,7 +53,8 @@ int main() {
             test_1.execute(Tick(1));
 
             test_1.execute(
-                ExpectOneSegment{}.with_no_flags().with_ack(true).with_ackno(1).with_seqno(seg.header().seqno + 1));
+                ExpectOneSegment{}.with_no_flags().with_ack(true).with_ackno(1).with_seqno(seg.header().seqno + 1),
+                "test 1 failed: wrong seq num need ack");
 
             // 正确的 ack 不需要 ack to ack
             test_1.send_ack(WrappingInt32{1}, seg.header().seqno + 1);

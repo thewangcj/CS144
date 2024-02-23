@@ -46,17 +46,22 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     // receiver 收到了 syn 的情况下收到 ack，通知 sender ackno/window 变换
     if (_receiver.ackno().has_value() && seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
+        if (seg.length_in_sequence_space() && !_segments_out.empty()) {
+            _push_segment_with_ack_and_win();
+            return;
+        }
     }
 
-    // 如果数据包有数据（没数据不需要回复，防止无限 ack），且之前没有发过包，需要回复一个 ack 包
+    // 如果数据包有数据（没数据不需要回复，防止无限 ack），且有 seq num，需要回复一个 ack 包
     if (seg.length_in_sequence_space() && seg.header().seqno.raw_value())
         _sender.send_empty_segment();
 
-    // keep-alive
+    // keep-alive，这里
     if (_receiver.ackno().has_value() && (seg.length_in_sequence_space() == 0) &&
-        seg.header().seqno == _receiver.ackno().value() - 1) {
+        seg.header().seqno != _receiver.ackno().value()) {
         _sender.send_empty_segment();
     }
+
     _push_segment_with_ack_and_win();
 }
 
