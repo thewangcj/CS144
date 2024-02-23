@@ -119,6 +119,9 @@ bool TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     // 没有待确认的包，停止超时机制
     if (flight_queue.empty())
         timer_running = false;
+
+    fill_window();
+
     return true;
 }
 

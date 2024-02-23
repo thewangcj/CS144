@@ -11,13 +11,26 @@ void DUMMY_CODE(Targs &&.../* unused */) {}
 using namespace std;
 
 bool TCPReceiver::segment_received(const TCPSegment &seg) {
-    if (seg.header().syn) {
-        if (!_has_syn_flag) {
+    if (!_has_syn_flag) {
+        // syn 之前的包都不要
+        if (seg.header().syn) {
             _isn = seg.header().seqno;
             _has_syn_flag = true;
-        } else
+        } else {
+            return false;
+        }
+    } else {
+        // reject second syn
+        if (seg.header().syn)
             return false;
     }
+    // if (seg.header().syn) {
+    //     if (!_has_syn_flag) {
+    //         _isn = seg.header().seqno;
+    //         _has_syn_flag = true;
+    //     } else
+    //         return false;
+    // }
     // 期望收到的下一个 seq_num
     uint64_t abs_ackno = _reassembler.stream_out().bytes_written() + 1;  // syn 也占用一位
     // 当前 seg 的 absolute seq num

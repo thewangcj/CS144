@@ -52,6 +52,7 @@ int main() {
             test.execute(ExpectBytes{"abcd"});
             test.execute(ExpectAckno{WrappingInt32{isn + 5}});
             test.execute(ExpectWindow{cap});
+            printf("window size expands upon read\n");
         }
 
         {
@@ -68,6 +69,7 @@ int main() {
             test.execute(ExpectAckno{WrappingInt32{isn + 1}});
             test.execute(ExpectWindow{cap});
             test.execute(ExpectTotalAssembledBytes{0});
+            printf("high-seqno segment is rejected\n");
         }
 
         {
@@ -84,6 +86,7 @@ int main() {
             test.execute(ExpectTotalAssembledBytes{2});
             test.execute(ExpectBytes{"ab"});
             test.execute(ExpectWindow{2});
+            printf("almost-high-seqno segment is accepted\n");
         }
 
         {
@@ -124,6 +127,7 @@ int main() {
                 SegmentArrives{}.with_syn().with_seqno(isn).with_result(SegmentArrives::Result::OUT_OF_WINDOW));
             test.execute(ExpectWindow{cap});
             test.execute(ExpectTotalAssembledBytes{0});
+            printf("second SYN is rejected\n");
         }
 
         {
