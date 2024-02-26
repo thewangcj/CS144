@@ -1,5 +1,6 @@
 #include "tcp_connection.hh"
 
+#include "tcp_config.hh"
 #include "tcp_segment.hh"
 #include "tcp_state.hh"
 
@@ -83,6 +84,16 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     if (!_active)
         return;
     _sender.tick(ms_since_last_tick);
+    // 超过了最大重传次数，要发送 rst
+    if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
+        TCPSegment _seg;
+        _seg.header().rst = true;
+        _segments_out.push(_seg);
+        _receiver.stream_out().set_error();
+        _sender.stream_in().set_error();
+        _active = false;
+        return;
+    }
     _push_segment_with_ack_and_win();
 }
 
