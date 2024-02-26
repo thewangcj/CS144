@@ -25,7 +25,6 @@ size_t TCPConnection::time_since_last_segment_received() const { return {}; }
 void TCPConnection::segment_received(const TCPSegment &seg) {
     if (!_active)
         return;
-
     if (seg.header().rst) {
         _receiver.stream_out().set_error();
         _sender.stream_in().set_error();
@@ -45,10 +44,14 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
     // receiver 收到了 syn 的情况下收到 ack，通知 sender ackno/window 变换
     if (_receiver.ackno().has_value() && seg.header().ack) {
-        _sender.ack_received(seg.header().ackno, seg.header().win);
+        bool ack_success = _sender.ack_received(seg.header().ackno, seg.header().win);
+        // printf("ack_success:%u\n", ack_success);
         if (seg.length_in_sequence_space() && !_segments_out.empty()) {
             _push_segment_with_ack_and_win();
             return;
+        }
+        if (!ack_success) {
+            _sender.send_empty_segment();
         }
     }
 
@@ -62,6 +65,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _sender.send_empty_segment();
     }
 
+    // 给待发送的包添加 ack和win
     _push_segment_with_ack_and_win();
 }
 
@@ -79,6 +83,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     if (!_active)
         return;
     _sender.tick(ms_since_last_tick);
+    _push_segment_with_ack_and_win();
 }
 
 void TCPConnection::end_input_stream() {}
