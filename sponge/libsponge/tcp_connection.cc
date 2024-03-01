@@ -60,7 +60,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         }
     }
 
-    // 如果数据包有数据（没数据不需要回复，防止无限 ack），且有 seq num，需要回复一个 ack 包
+    // 如果数据包有数据（没数据不需要回复，防止无限 ack），且有 seq num 正确，需要回复一个 ack 包
     // 这里 seq_num 可能为 0
     if (seg.length_in_sequence_space())
         _sender.send_empty_segment();
@@ -71,9 +71,17 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _sender.send_empty_segment();
     }
 
-    // lask_ack：收到对方发来的 fin 且自己发送了 fin
+    // close_wait: 被动关闭，不需要 linger after stream
     if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
-        TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_SENT) {
+        TCPState::state_summary(_sender) == TCPSenderStateSummary::SYN_ACKED) {
+        _linger_after_streams_finish = false;
+    }
+
+    // CLOSED,被动关闭不需要等待
+    if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
+        TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_ACKED && !_linger_after_streams_finish) {
+        _active = false;
+        return;
     }
 
     // 给待发送的包添加 ack和win
