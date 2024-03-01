@@ -21,11 +21,14 @@ size_t TCPConnection::bytes_in_flight() const { return _sender.bytes_in_flight()
 
 size_t TCPConnection::unassembled_bytes() const { return _receiver.unassembled_bytes(); }
 
-size_t TCPConnection::time_since_last_segment_received() const { return {}; }
+size_t TCPConnection::time_since_last_segment_received() const { return _time_since_last_segment_received; }
 
 void TCPConnection::segment_received(const TCPSegment &seg) {
     if (!_active)
         return;
+
+    _time_since_last_segment_received = 0;
+
     if (seg.header().rst) {
         _receiver.stream_out().set_error();
         _sender.stream_in().set_error();
@@ -40,6 +43,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     // 这里 receiver 为什么是 syn_recv 而不是 Listen？因为前面 receiver 已经receive了segment，因此进入了该状态
     if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::SYN_RECV &&
         TCPState::state_summary(_sender) == TCPSenderStateSummary::CLOSED) {
+        // cout << "send syn_ack " << endl;
         connect();
         return;
     }
@@ -57,13 +61,19 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
 
     // 如果数据包有数据（没数据不需要回复，防止无限 ack），且有 seq num，需要回复一个 ack 包
-    if (seg.length_in_sequence_space() && seg.header().seqno.raw_value())
+    // 这里 seq_num 可能为 0
+    if (seg.length_in_sequence_space())
         _sender.send_empty_segment();
 
     // keep-alive，这里
     if (_receiver.ackno().has_value() && (seg.length_in_sequence_space() == 0) &&
         seg.header().seqno != _receiver.ackno().value()) {
         _sender.send_empty_segment();
+    }
+
+    // lask_ack：收到对方发来的 fin 且自己发送了 fin
+    if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
+        TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_SENT) {
     }
 
     // 给待发送的包添加 ack和win
@@ -83,7 +93,11 @@ size_t TCPConnection::write(const string &data) {
 void TCPConnection::tick(const size_t ms_since_last_tick) {
     if (!_active)
         return;
+
+    _time_since_last_segment_received += ms_since_last_tick;
+
     _sender.tick(ms_since_last_tick);
+
     // 超过了最大重传次数，要发送 rst
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
         TCPSegment _seg;
@@ -97,7 +111,12 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
     _push_segment_with_ack_and_win();
 }
 
-void TCPConnection::end_input_stream() {}
+// 流结束，发送 fin 报文
+void TCPConnection::end_input_stream() {
+    _sender.stream_in().end_input();
+    _sender.fill_window();
+    _push_segment_with_ack_and_win();
+}
 
 void TCPConnection::connect() {
     // syn_send
@@ -120,6 +139,7 @@ TCPConnection::~TCPConnection() {
 
 void TCPConnection::_push_segment_with_ack_and_win() {
     while (!_sender.segments_out().empty()) {
+        cout << "push_segment_with_ack_and_win" << endl;
         TCPSegment seg = _sender.segments_out().front();
         // 这里是的 ackno() 返回的是 receiver 接受且 reassamble 好的数据量
         if (_receiver.ackno().has_value()) {

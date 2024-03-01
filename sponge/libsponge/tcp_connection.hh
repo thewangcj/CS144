@@ -5,6 +5,7 @@
 #include "tcp_receiver.hh"
 #include "tcp_sender.hh"
 #include "tcp_state.hh"
+#include <cstddef>
 
 //! \brief A complete endpoint of a TCP connection
 class TCPConnection {
@@ -19,8 +20,10 @@ class TCPConnection {
     //! Should the TCPConnection stay active (and keep ACKing)
     //! for 10 * _cfg.rt_timeout milliseconds after both streams have ended,
     //! in case the remote TCPConnection doesn't know we've received its whole stream?
+    // 4次挥手最后的等待时间，确保对方收到最后一个 ack
     bool _linger_after_streams_finish{true};
     bool _active{true};
+    size_t _time_since_last_segment_received{0};
     void _push_segment_with_ack_and_win();
 
   public:
