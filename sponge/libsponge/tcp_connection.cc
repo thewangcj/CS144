@@ -71,7 +71,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         _sender.send_empty_segment();
     }
 
-    // close_wait: 被动关闭，不需要 linger after stream
+    // close_wait: 收到 fin 被动关闭，不需要 linger after stream
     if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
         TCPState::state_summary(_sender) == TCPSenderStateSummary::SYN_ACKED) {
         _linger_after_streams_finish = false;
@@ -117,6 +117,13 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         return;
     }
     _push_segment_with_ack_and_win();
+    // 处于 TIMEWAIT 且超时了，关闭链接
+    if (TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_ACKED &&
+        TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
+        _time_since_last_segment_received >= _cfg.rt_timeout * 10) {
+        _active = false;
+        _linger_after_streams_finish = false;
+    }
 }
 
 // 流结束，发送 fin 报文
@@ -137,8 +144,10 @@ TCPConnection::~TCPConnection() {
     try {
         if (active()) {
             cerr << "Warning: Unclean shutdown of TCPConnection\n";
-
             // Your code here: need to send a RST segment to the peer
+            _receiver.stream_out().set_error();
+            _sender.stream_in().set_error();
+            _active = false;
         }
     } catch (const exception &e) {
         std::cerr << "Exception destructing TCP FSM: " << e.what() << std::endl;
@@ -147,7 +156,7 @@ TCPConnection::~TCPConnection() {
 
 void TCPConnection::_push_segment_with_ack_and_win() {
     while (!_sender.segments_out().empty()) {
-        cout << "push_segment_with_ack_and_win" << endl;
+        // cout << "push_segment_with_ack_and_win" << endl;
         TCPSegment seg = _sender.segments_out().front();
         // 这里是的 ackno() 返回的是 receiver 接受且 reassamble 好的数据量
         if (_receiver.ackno().has_value()) {
