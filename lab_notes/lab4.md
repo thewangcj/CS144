@@ -28,3 +28,5 @@ tests.cmake 中各种测试用例的含义：
 “D” means data is being sent in bothdirections
 lowercase “l” means there is packet loss on the receiving (incoming segment) direction
 uppercase “L” means there is packet loss on the sending (outgoing segment) direction.
+
+抓包发现报文没有以太头，直接就是 IP 头开始
