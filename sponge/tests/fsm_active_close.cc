@@ -19,12 +19,10 @@ int main() {
 
         // test #1: start in TIME_WAIT, timeout
         {
-            cout << "test #1" << endl;
             TCPTestHarness test_1 = TCPTestHarness::in_time_wait(cfg);
 
             test_1.execute(Tick(10 * cfg.rt_timeout - 1));
 
-            // TIME_WAIT: 发送完最后一个 ack,等待 2MSL 时间后关闭
             test_1.execute(ExpectState{State::TIME_WAIT});
 
             test_1.execute(Tick(1));
@@ -38,7 +36,6 @@ int main() {
 
         // test #2: start in CLOSING, send ack, time out
         {
-            cout << "test #2" << endl;
             TCPTestHarness test_2 = TCPTestHarness::in_closing(cfg);
 
             test_2.execute(Tick(4 * cfg.rt_timeout));
@@ -61,7 +58,6 @@ int main() {
 
         // test #3: start in FIN_WAIT_2, send FIN, time out
         {
-            cout << "test #3" << endl;
             TCPTestHarness test_3 = TCPTestHarness::in_fin_wait_2(cfg);
 
             test_3.execute(Tick(4 * cfg.rt_timeout));
@@ -85,7 +81,6 @@ int main() {
 
         // test #4: start in FIN_WAIT_1, ack, FIN, time out
         {
-            cout << "test #4" << endl;
             TCPTestHarness test_4 = TCPTestHarness::in_fin_wait_1(cfg);
 
             // Expect retransmission of FIN
@@ -111,7 +106,6 @@ int main() {
 
         // test 5: start in FIN_WAIT_1, ack, FIN, FIN again, time out
         {
-            cout << "test #5" << endl;
             TCPTestHarness test_5 = TCPTestHarness::in_fin_wait_1(cfg);
 
             // ACK the FIN
@@ -155,7 +149,6 @@ int main() {
 
         // test 6: start in ESTABLISHED, get FIN, get FIN re-tx, send FIN, get ACK, send ACK, time out
         {
-            cout << "test #6" << endl;
             TCPTestHarness test_6 = TCPTestHarness::in_established(cfg);
 
             test_6.execute(Close{});

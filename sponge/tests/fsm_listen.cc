@@ -48,15 +48,12 @@ int main() {
                 ExpectOneSegment{}.with_no_flags().with_ack(true).with_ackno(1).with_seqno(seg.header().seqno + 1),
                 "test 1 failed: wrong response to old seqno");
 
-            // 错误的 seq num 也需要有一个 ack
             test_1.send_ack(WrappingInt32(cfg.recv_capacity + 1), syn_seqno + 1);
             test_1.execute(Tick(1));
 
             test_1.execute(
-                ExpectOneSegment{}.with_no_flags().with_ack(true).with_ackno(1).with_seqno(seg.header().seqno + 1),
-                "test 1 failed: wrong seq num need ack");
+                ExpectOneSegment{}.with_no_flags().with_ack(true).with_ackno(1).with_seqno(seg.header().seqno + 1));
 
-            // 正确的 ack 不需要 ack to ack
             test_1.send_ack(WrappingInt32{1}, seg.header().seqno + 1);
             test_1.execute(Tick(1));
             test_1.execute(ExpectNoSegment{}, "test 1 failed: no need to ACK an ACK");

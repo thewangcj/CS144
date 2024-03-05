@@ -6,7 +6,6 @@
 #include "util.hh"
 
 #include <cstdint>
-#include <cstdio>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -39,20 +38,17 @@ int main() {
             // send ACK only (no SYN yet)
             test_1.send_ack(WrappingInt32{0}, seg1.header().seqno + 1);
             test_1.execute(Tick(1));
-            // 这里 SYN_SENT 指的是 connection 整体的状态,比如这里 SYN_SENT 是 sender 处于 SYN_SENT, receiver 处于 LISTEN
             test_1.execute(ExpectState{State::SYN_SENT});
 
             // now send SYN
             const WrappingInt32 isn(rd());
             test_1.send_syn(isn);
             test_1.execute(Tick(1));
-            // SYN_RCVD 是 sender 处于 SYN_SENT, receiver 处于 SYN_RECV
             test_1.execute(ExpectState{State::SYN_RCVD});
 
             test_1.execute(ExpectOneSegment{}.with_ack(true).with_syn(false).with_ackno(isn + 1));
 
             test_1.execute(ExpectBytesInFlight{1UL});
-            printf("test#1\n");
         }
 
         // test #2: START -> SYN_SENT -> SYN -> ACK -> ESTABLISHED
@@ -82,7 +78,6 @@ int main() {
             test_2.send_ack(isn + 1, seg_hdr.seqno + 1);
             test_2.execute(Tick(1));
             test_2.execute(ExpectNoSegment{}, "test 2 failed: got spurious ACK after ACKing SYN");
-            // sender syn_ack receiver syn_recv
             test_2.execute(ExpectState{State::ESTABLISHED});
         }
 

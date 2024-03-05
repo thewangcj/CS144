@@ -22,7 +22,6 @@ ParseResult TCPSegment::parse(const Buffer buffer, const uint32_t datagram_layer
     return p.get_error();
 }
 
-// syn/fin 占空间，ack 不占
 size_t TCPSegment::length_in_sequence_space() const {
     return payload().str().size() + (header().syn ? 1 : 0) + (header().fin ? 1 : 0);
 }

@@ -129,18 +129,16 @@ int main() {
         }
 
         // test 3: ACKs in LISTEN
-        {
-            cerr << "Test 3" << endl;
-            ack_listen_test(cfg, base_seq, base_seq, __LINE__);
-            ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);
-            ack_listen_test(cfg, base_seq, base_seq - 1, __LINE__);
-            ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);
-            ack_listen_test(cfg, base_seq - 1, base_seq - 1, __LINE__);
-            ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq, __LINE__);
-            ack_listen_test(cfg, base_seq, base_seq + cfg.recv_capacity, __LINE__);
-            ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq, __LINE__);
-            ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq + cfg.recv_capacity, __LINE__);
-        }
+        cerr << "Test 3" << endl;
+        ack_listen_test(cfg, base_seq, base_seq, __LINE__);
+        ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);
+        ack_listen_test(cfg, base_seq, base_seq - 1, __LINE__);
+        ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);
+        ack_listen_test(cfg, base_seq - 1, base_seq - 1, __LINE__);
+        ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq, __LINE__);
+        ack_listen_test(cfg, base_seq, base_seq + cfg.recv_capacity, __LINE__);
+        ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq, __LINE__);
+        ack_listen_test(cfg, base_seq + cfg.recv_capacity, base_seq + cfg.recv_capacity, __LINE__);
 
         // test 4: ACK and RST in SYN_SENT
         {
@@ -170,13 +168,11 @@ int main() {
         }
 
         // test 5: ack/rst in SYN_SENT
-        {
-            cerr << "Test 5" << endl;
-            ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq, false, __LINE__);
-            ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq + 2, false, __LINE__);
-            ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq, true, __LINE__);
-            ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq + 2, true, __LINE__);
-        }
+        cerr << "Test 5" << endl;
+        ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq, false, __LINE__);
+        ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq + 2, false, __LINE__);
+        ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq, true, __LINE__);
+        ack_rst_syn_sent_test(cfg, base_seq, base_seq, base_seq + 2, true, __LINE__);
     } catch (const exception &e) {
         cerr << e.what() << endl;
         return EXIT_FAILURE;
